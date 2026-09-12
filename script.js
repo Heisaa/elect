@@ -148,7 +148,7 @@ function buildColumn(p) {
       <div class="bar" style="background:${COLORS[p.key]}"></div>
     </div>
     <div class="value-row">
-      ${isOthers ? "" : '<span class="steppers"><button class="stepper minus" type="button" aria-label="Minska">−</button><button class="stepper plus" type="button" aria-label="Öka">+</button></span>'}
+      ${isOthers ? "" : '<span class="steppers"><button class="stepper plus" type="button" aria-label="Öka">+</button><button class="stepper minus" type="button" aria-label="Minska">−</button></span>'}
       ${isOthers
         ? '<span class="pct-input static" data-others>0,0</span>'
         : `<input class="pct-input" type="text" inputmode="decimal" value="0,0" aria-label="${p.name}, procent">`}
