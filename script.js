@@ -83,17 +83,24 @@ const BADGE_SVG = {
 };
 
 // Försök ladda riktiga logotyper från logos/-mappen, fall annars tillbaka till SVG-märket.
+// Kollar med fetch HEAD först så att webbläsaren inte loggar 404:or för bilder som saknas.
 const logoImgs = {};
-function tryLogo(partyKey, onDone) {
-  const paths = [`logos/${partyKey}.png`, `logos/${partyKey}.svg`];
-  const attempt = (i) => {
-    if (i >= paths.length) return;
-    const img = new Image();
-    img.onload = () => { logoImgs[partyKey] = img; onDone(); };
-    img.onerror = () => attempt(i + 1);
-    img.src = paths[i];
-  };
-  attempt(0);
+async function tryLogo(partyKey, onDone) {
+  for (const ext of ["svg", "png"]) {
+    const path = `logos/${partyKey}.${ext}`;
+    try {
+      const res = await fetch(path, { method: "HEAD" });
+      if (res.ok) {
+        const img = new Image();
+        img.onload = () => { logoImgs[partyKey] = img; onDone(); };
+        img.src = path;
+        return;
+      }
+    } catch {
+      // ingen fetch (t.ex. fil://) – behåll SVG-märket
+      return;
+    }
+  }
 }
 
 /* ---------- State ---------- */
