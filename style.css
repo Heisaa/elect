@@ -208,6 +208,25 @@ h1 {
   color: var(--muted);
 }
 
+/* ---------- Mandatkort ---------- */
+
+.seats { margin-top: 1.4rem; }
+
+.card-title {
+  font: 600 0.72rem var(--sans);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: center;
+  margin: 0 0 0.75rem;
+}
+
+#hemicycle svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
 /* ---------- Meddelanden ---------- */
 
 .warning {

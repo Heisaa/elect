@@ -4,8 +4,8 @@ const ELECTION_YEAR = 2026;
 const ELECTION_DATE = "13 september 2026";
 
 const PARTIES = [
-  { abbr: "S",  name: "Socialdemokraterna", base: 30.3 },
   { abbr: "V",  name: "Vänsterpartiet",     base: 6.7 },
+  { abbr: "S",  name: "Socialdemokraterna", base: 30.3 },
   { abbr: "MP", name: "Miljöpartiet",      base: 5.1 },
   { abbr: "C",  name: "Centerpartiet",      base: 6.7 },
   { abbr: "L",  name: "Liberalerna",        base: 4.6 },
@@ -118,6 +118,103 @@ function clampValue(abbr, value) {
     .filter(([a]) => a !== abbr)
     .reduce((s, [, v]) => s + v, 0);
   return round1(Math.min(Math.max(value, 0), Math.max(0, round1(100 - othersSum))));
+}
+
+/* ---------- Mandat (modifierad Sainte-Lagué, 4 %-spärr) ---------- */
+
+const TOTAL_SEATS = 349;
+const MAJORITY_SEATS = Math.floor(TOTAL_SEATS / 2) + 1; // 175
+const THRESHOLD = 4;
+
+function seatCounts() {
+  const eligible = PARTIES.filter((p) => values[p.abbr] >= THRESHOLD);
+  if (!eligible.length) return [];
+  const seats = new Map(eligible.map((p) => [p.abbr, 0]));
+  const divisor = new Map(eligible.map((p) => [p.abbr, 1.4])); // första delaren 1,4
+  for (let s = 0; s < TOTAL_SEATS; s++) {
+    let best = null, bestQ = -Infinity;
+    for (const p of eligible) {
+      const q = values[p.abbr] / divisor.get(p.abbr);
+      if (q > bestQ) { bestQ = q; best = p.abbr; }
+    }
+    seats.set(best, seats.get(best) + 1);
+    const d = divisor.get(best);
+    divisor.set(best, d === 1.4 ? 3 : d + 2);
+  }
+  return eligible.map((p) => ({ key: p.abbr, color: COLORS[p.abbr], seats: seats.get(p.abbr) }));
+}
+
+/* ---------- Halvcirkeldiagram ---------- */
+
+const hemicycleBox = document.getElementById("hemicycle");
+let hemicycleDots = []; // { theta } i samma ordning som cirklarna i SVG:n
+
+function buildHemicycle() {
+  const W = 900, H = 480, cx = W / 2, cy = 452;
+  const rMin = 150, rMax = 415, ROWS = 9;
+
+  const radii = [];
+  for (let k = 0; k < ROWS; k++) radii.push(rMin + (k + 0.5) * (rMax - rMin) / ROWS);
+  const wSum = radii.reduce((a, b) => a + b, 0);
+
+  // Platser per rad, proportionellt mot radens radie (störst rest-metoden)
+  const exact = radii.map((r) => (TOTAL_SEATS * r) / wSum);
+  const perRow = exact.map(Math.floor);
+  let left = TOTAL_SEATS - perRow.reduce((a, b) => a + b, 0);
+  exact.map((v, i) => [v - perRow[i], i])
+    .sort((a, b) => b[0] - a[0])
+    .slice(0, left)
+    .forEach(([, i]) => perRow[i]++);
+
+  // Punktstorlek som inte överskrider vare sig rad- eller bågavståndet
+  let dotR = (rMax - rMin) / ROWS / 2;
+  for (let k = 0; k < ROWS; k++) dotR = Math.min(dotR, (Math.PI * radii[k]) / perRow[k] / 2);
+  dotR *= 0.82;
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Mandatfördelning i riksdagen">`;
+
+  // Majoritetslinje vid 175 mandat (ligger alltid vid halva bågen)
+  svg += `<line x1="${cx}" y1="${cy - rMin + dotR}" x2="${cx}" y2="${cy - rMax - dotR - 4}" stroke="#b3a98f" stroke-dasharray="4 4"/>`;
+  svg += `<text x="${cx}" y="${cy - rMax - dotR - 10}" text-anchor="middle" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="#8a7f6d">${MAJORITY_SEATS}</text>`;
+
+  hemicycleDots = [];
+  for (let k = 0; k < ROWS; k++) {
+    const n = perRow[k], r = radii[k];
+    for (let j = 0; j < n; j++) {
+      const theta = Math.PI * (1 - (j + 0.5) / n);
+      const x = cx + r * Math.cos(theta);
+      const y = cy - r * Math.sin(theta);
+      svg += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${dotR.toFixed(1)}" fill="#d8d2c8"/>`;
+      hemicycleDots.push({ theta });
+    }
+  }
+
+  // Totalantal i halvcirkelns hål
+  svg += `<text x="${cx}" y="${cy - 72}" text-anchor="middle" font-family="'Source Serif 4',Georgia,serif" font-weight="900" font-size="44" fill="#141210">${TOTAL_SEATS}</text>`;
+  svg += `<text x="${cx}" y="${cy - 48}" text-anchor="middle" font-family="Inter,sans-serif" font-size="13" font-weight="600" letter-spacing="2" fill="#8a7f6d">MANDAT</text>`;
+  svg += "</svg>";
+
+  hemicycleBox.innerHTML = svg;
+  const circles = hemicycleBox.querySelectorAll("circle");
+  circles.forEach((el, i) => (hemicycleDots[i].el = el));
+  // Sortera vänster till höger så att partiblock kan tilldelas i följd
+  hemicycleDots.sort((a, b) => b.theta - a.theta);
+}
+
+function updateHemicycle() {
+  if (!hemicycleDots.length) return;
+
+  // Tilldela partiernas mandat som sammanhängande block, från vänster
+  let idx = 0;
+  for (const s of seatCounts()) {
+    for (let i = 0; i < s.seats; i++, idx++) {
+      hemicycleDots[idx].el.setAttribute("fill", s.color);
+    }
+  }
+  // Resterande prickar (inget parti över spärren) hålls grå
+  for (; idx < hemicycleDots.length; idx++) {
+    hemicycleDots[idx].el.setAttribute("fill", "#d8d2c8");
+  }
 }
 
 function allRows() {
@@ -252,6 +349,8 @@ function refreshUI() {
   warning.classList.toggle("hidden", ok);
   downloadBtn.disabled = !ok;
   copyBtn.disabled = !ok;
+
+  updateHemicycle();
 }
 
 document.getElementById("prefill-2022").addEventListener("click", () => {
@@ -452,4 +551,5 @@ for (const p of PARTIES.map((p) => p.abbr)) {
   });
 }
 
+buildHemicycle();
 refreshUI();
