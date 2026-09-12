@@ -9,9 +9,9 @@ const PARTIES = [
   { abbr: "MP", name: "Miljöpartiet",      base: 5.1 },
   { abbr: "C",  name: "Centerpartiet",      base: 6.7 },
   { abbr: "L",  name: "Liberalerna",        base: 4.6 },
-  { abbr: "KD", name: "Kristdemokraterna",  base: 4.6 },
+  { abbr: "KD", name: "Kristdemokraterna",  base: 5.3 },
   { abbr: "M",  name: "Moderaterna",        base: 19.1 },
-  { abbr: "SD", name: "Sverigedemokraterna",base: 20.5 },
+  { abbr: "SD", name: "Sverigedemokraterna",base: 20.6 },
 ];
 const OTHERS_ABBR = "Övriga";
 const OTHERS_NAME = "övriga partier";
