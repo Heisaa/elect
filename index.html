@@ -7,36 +7,38 @@
   <meta name="description" content="Gissa andelarna i riksdagsvalet 2026 och dela din gissning som bild eller text.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,700;0,8..60,900;1,8..60,400&family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <main class="wrap">
     <header class="hero">
-      <p class="kicker">Riksdagsvalet 2026 · söndag 13 september</p>
+      <p class="kicker">Riksdagsvalet 2026 &middot; s&ouml;ndag 13 september</p>
       <h1>Gissa resultatet</h1>
-      <p class="subtitle">Dra i staplarna, snurra på knapparna eller skriv siffror själv – med en decimal. Summan hamnar alltid på 100,0&nbsp;% eftersom övriga partier räknas ut automatiskt.</p>
+      <p class="subtitle">Dra i staplarna, snurra p&aring; knapparna eller skriv siffror sj&auml;lv &ndash; med en decimal. Summan hamnar alltid p&aring; 100,0&nbsp;%, eftersom &ouml;vriga partier ber&auml;knas automatiskt.</p>
     </header>
 
+    <div class="rules" aria-hidden="true"></div>
+
     <section class="toolbar">
-      <button id="prefill-2022" class="btn outline" type="button">Förifyll med 2022 års resultat</button>
-      <button id="reset" class="btn ghost" type="button">Börja om</button>
+      <button id="prefill-2022" class="btn solid" type="button">F&ouml;rifyll med 2022 &aring;rs resultat</button>
+      <button id="reset" class="btn" type="button">B&ouml;rja om</button>
     </section>
 
     <section class="card">
       <div id="chart" class="chart" aria-label="Din gissning"></div>
-      <p id="warning" class="warning hidden">Summan överstiger 100,0&nbsp;% – minska något parti.</p>
-      <p class="hint">Tips: dra med mus eller finger, klicka på stapeln eller använd <kbd>↑</kbd><kbd>↓</kbd> i sifferfältet.</p>
+      <p id="warning" class="warning hidden">Summan &ouml;verstiger 100,0&nbsp;% &ndash; minska n&aring;got parti.</p>
+      <p class="hint">Tips: dra med mus eller finger, rulla med scrollhjulet, eller anv&auml;nd <kbd>&uarr;</kbd><kbd>&darr;</kbd> i sifferf&auml;ltet.</p>
     </section>
 
     <section class="actions">
-      <button id="download-btn" class="btn primary" type="button">Ladda ner bild</button>
-      <button id="copy-btn" class="btn outline" type="button">Kopiera som text</button>
+      <button id="download-btn" class="btn solid" type="button">Ladda ner bild</button>
+      <button id="copy-btn" class="btn" type="button">Kopiera som text</button>
     </section>
     <p id="copied-msg" class="copied-msg hidden">Kopierat till urklipp!</p>
 
     <footer>
-      <p>Sista mening innan vallokalerna stänger. <span class="sum-chip">Summa <strong id="total-display">100,0&nbsp;%</strong></span></p>
+      <p>Sista gissningen f&ouml;re valnatten. Summa <strong id="total-display">100,0&nbsp;%</strong></p>
     </footer>
   </main>
 

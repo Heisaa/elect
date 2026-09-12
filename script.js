@@ -18,17 +18,17 @@ const OTHERS_NAME = "övriga partier";
 
 const TRACK_MAX = 40; // procent som motsvarar stapelns fulla höjd
 
-/* Färgpalett: [topp, botten] för stapelns gradient + badge-färg */
+/* Färg per parti – platta, utan gradient */
 const COLORS = {
-  S:  { grad: ["#ff4557", "#c00d24"], glow: "rgba(232,17,45,0.35)" },
-  V:  { grad: ["#ff5148", "#b31e14"], glow: "rgba(218,41,28,0.35)" },
-  MP: { grad: ["#9be14d", "#6cb02a"], glow: "rgba(131,207,57,0.35)" },
-  C:  { grad: ["#2fd47e", "#007a43"], glow: "rgba(0,159,87,0.35)" },
-  L:  { grad: ["#3fa4ff", "#005082"], glow: "rgba(0,106,167,0.35)" },
-  KD: { grad: ["#5d6cd0", "#1b2260"], glow: "rgba(35,43,107,0.4)" },
-  M:  { grad: ["#7cc0f0", "#2c7dbf"], glow: "rgba(82,163,216,0.35)" },
-  SD: { grad: ["#ffd25e", "#e8a200"], glow: "rgba(254,188,17,0.3)" },
-  OV: { grad: ["#9aa3b5", "#5b6478"], glow: "rgba(138,146,156,0.3)" },
+  S: "#e8112d",
+  V: "#da291c",
+  MP: "#83cf39",
+  C: "#009f57",
+  L: "#006aa7",
+  KD: "#232b6b",
+  M: "#52a3d8",
+  SD: "#febc11",
+  OV: "#9aa0a8",
 };
 
 /* ---------- Partimärken (inline-SVG, alternativt logos/<abbr>.png|svg) ---------- */
@@ -38,7 +38,7 @@ function chipSvg(color, letters, textColor = "#fff") {
   return `<svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${letters}">
     <rect width="40" height="40" rx="11" fill="${color}"/>
     <text x="20" y="20" text-anchor="middle" dominant-baseline="central"
-      font-family="'Space Grotesk','Inter',sans-serif" font-weight="700" font-size="${size}"
+      font-family="'Inter',sans-serif" font-weight="700" font-size="${size}"
       fill="${textColor}">${letters}</text>
   </svg>`;
 }
@@ -133,20 +133,18 @@ const els = {};
 
 function buildColumn(p) {
   const isOthers = p.key === "OV";
-  const c = COLORS[p.key];
   const col = document.createElement("div");
   col.className = "column" + (isOthers ? " is-others" : "");
   col.innerHTML = `
     <div class="badge" title="${p.name}">${BADGE_SVG[p.key]}</div>
     <div class="track${isOthers ? " readonly" : ""}" ${isOthers ? "" : 'role="slider" tabindex="0" aria-label="' + p.name + '"'}>
-      <div class="bar" style="background:linear-gradient(180deg,${c.grad[0]},${c.grad[1]});box-shadow:0 0 18px ${c.glow}"></div>
+      <div class="bar" style="background:${COLORS[p.key]}"></div>
     </div>
     <div class="value-row">
-      ${isOthers ? "" : '<button class="stepper minus" type="button" aria-label="Minska">−</button>'}
+      ${isOthers ? "" : '<span class="steppers"><button class="stepper minus" type="button" aria-label="Minska">−</button><button class="stepper plus" type="button" aria-label="Öka">+</button></span>'}
       ${isOthers
         ? '<span class="pct-input static" data-others>0,0</span>'
         : `<input class="pct-input" type="text" inputmode="decimal" value="0,0" aria-label="${p.name}, procent">`}
-      ${isOthers ? "" : '<button class="stepper plus" type="button" aria-label="Öka">+</button>'}
     </div>
     <span class="col-abbr">${p.abbr}</span>`;
   chart.appendChild(col);
@@ -300,27 +298,11 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-function roundedTopBar(ctx, x, y, w, h, r) {
-  const rr = Math.min(r, w / 2, h / 2);
-  ctx.beginPath();
-  ctx.moveTo(x, y + h);
-  ctx.lineTo(x, y + rr);
-  ctx.arcTo(x, y, x + rr, y, rr);
-  ctx.lineTo(x + w - rr, y);
-  ctx.arcTo(x + w, y, x + w, y + rr, rr);
-  ctx.lineTo(x + w, y + h);
-  ctx.closePath();
-}
-
 function drawBadge(ctx, key, cx, cy, size) {
   const img = logoImgs[key];
   if (img) {
-    // vit bricka bakom logotypen (blå logotyper syns dåligt mot mörk bakgrund)
-    ctx.fillStyle = "#fff";
-    roundRect(ctx, cx - size / 2, cy - size / 2, size, size, size * 0.27);
-    ctx.fill();
     const iw = img.naturalWidth || 512, ih = img.naturalHeight || 512;
-    const scale = (size * 0.92) / Math.max(iw, ih);
+    const scale = (size * 0.95) / Math.max(iw, ih);
     const w = iw * scale, h = ih * scale;
     ctx.drawImage(img, cx - w / 2, cy - h / 2, w, h);
     return;
@@ -356,7 +338,7 @@ function drawBadge(ctx, key, cx, cy, size) {
     ctx.fillStyle = solid[key] || "#6b7484";
     roundRect(ctx, x, y, size, size, size * 0.27); ctx.fill();
     ctx.fillStyle = letterColor;
-    ctx.font = `700 ${key.length > 2 ? size * 0.34 : size * 0.5}px "Space Grotesk","Inter",sans-serif`;
+    ctx.font = `700 ${key.length > 2 ? size * 0.34 : size * 0.5}px "Inter",sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(key === "OV" ? "Ö" : key, cx, cy + size * 0.02);
@@ -368,24 +350,28 @@ function drawBadge(ctx, key, cx, cy, size) {
 function drawCanvas() {
   const ctx = canvas.getContext("2d");
   const W = canvas.width, H = canvas.height;
-  const FONT = '"Space Grotesk","Inter",sans-serif';
+  const SERIF = '"Source Serif 4", Georgia, serif';
+  const SANS = '"Inter", sans-serif';
+  const INK = "#141210", MUTED = "#8a7f6d", HAIR = "#d8d2c8";
 
-  ctx.fillStyle = "#0a0e1a";
-  ctx.fillRect(0, 0, W, H);
-  const glow = ctx.createRadialGradient(W * 0.7, -100, 50, W * 0.7, -100, 700);
-  glow.addColorStop(0, "rgba(27,43,82,0.8)");
-  glow.addColorStop(1, "transparent");
-  ctx.fillStyle = glow;
+  ctx.fillStyle = "#faf8f4";
   ctx.fillRect(0, 0, W, H);
 
-  ctx.fillStyle = "#eef1f8";
-  ctx.font = `700 40px ${FONT}`;
+  // Rubrik med dek, som en tidningsvolant
+  ctx.fillStyle = INK;
+  ctx.font = `900 46px ${SERIF}`;
   ctx.textAlign = "center";
   ctx.fillText(`Min gissning: Riksdagsvalet ${ELECTION_YEAR}`, W / 2, 64);
-  ctx.fillStyle = "#929cb3";
-  ctx.font = `400 20px ${FONT}`;
-  ctx.fillText(`${ELECTION_DATE} · procent av rösterna · summa 100,0 %`, W / 2, 98);
+  ctx.fillStyle = "#5a5348";
+  ctx.font = `italic 400 20px ${SERIF}`;
+  ctx.fillText(`${ELECTION_DATE} · procent av rösterna`, W / 2, 96);
   ctx.textAlign = "left";
+
+  // Dubbel tidningslinje
+  ctx.fillStyle = INK;
+  ctx.fillRect(70, 116, W - 140, 3);
+  ctx.fillStyle = HAIR;
+  ctx.fillRect(70, 123, W - 140, 1);
 
   const data = allRows();
   const n = data.length;
@@ -398,39 +384,46 @@ function drawCanvas() {
   data.forEach((d, i) => {
     const cx = left + colW * (i + 0.5);
     const h = (Math.min(d.pct, TRACK_MAX) / TRACK_MAX) * maxBarH;
-    const c = COLORS[d.key];
 
-    // spår
-    ctx.fillStyle = "rgba(255,255,255,0.05)";
-    roundRect(ctx, cx - barW / 2, baseline - maxBarH, barW, maxBarH, 12);
-    ctx.fill();
+    // spår med tunnt rutnät (ett streck per 5 procent)
+    ctx.fillStyle = "rgba(20,18,16,0.05)";
+    ctx.fillRect(cx - barW / 2, baseline - maxBarH, barW, maxBarH);
+    ctx.fillStyle = "rgba(20,18,16,0.07)";
+    for (let g = 1; g <= 7; g++) {
+      ctx.fillRect(cx - barW / 2, baseline - (maxBarH / 8) * g, barW, 1);
+    }
 
-    // stapel
+    // platt stapel med räta hörn
     if (d.pct > 0) {
-      const g = ctx.createLinearGradient(0, baseline - h, 0, baseline);
-      g.addColorStop(0, c.grad[0]);
-      g.addColorStop(1, c.grad[1]);
-      ctx.fillStyle = g;
-      roundedTopBar(ctx, cx - barW / 2, baseline - h, barW, h, 12);
-      ctx.fill();
+      ctx.fillStyle = COLORS[d.key];
+      ctx.fillRect(cx - barW / 2, baseline - h, barW, h);
     }
 
     // märke ovanpå stapeln
     drawBadge(ctx, d.key, cx, baseline - h - badgeSize / 2 - 8, badgeSize);
 
     // procent + partibokstav
-    ctx.fillStyle = "#eef1f8";
-    ctx.font = `700 24px ${FONT}`;
+    ctx.fillStyle = INK;
+    ctx.font = `600 22px ${SANS}`;
     ctx.textAlign = "center";
-    ctx.fillText(fmt(d.pct), cx, baseline + 38);
-    ctx.fillStyle = "#929cb3";
-    ctx.font = `700 16px ${FONT}`;
-    ctx.fillText(d.abbr === OTHERS_ABBR ? "Övriga" : d.abbr, cx, baseline + 62);
+    ctx.fillText(fmt(d.pct), cx, baseline + 36);
+    ctx.fillStyle = MUTED;
+    ctx.font = `600 14px ${SANS}`;
+    ctx.fillText(d.abbr === OTHERS_ABBR ? "Övriga" : d.abbr, cx, baseline + 58);
     ctx.textAlign = "left";
   });
 
-  ctx.fillStyle = "rgba(255,255,255,0.14)";
-  ctx.fillRect(left, baseline, right - left, 1);
+  // Baslinje + tfot med hårstreck
+  ctx.fillStyle = INK;
+  ctx.fillRect(left, baseline, right - left, 2);
+  ctx.fillStyle = HAIR;
+  ctx.fillRect(left, 588, right - left, 1);
+  ctx.fillStyle = MUTED;
+  ctx.font = `400 16px ${SANS}`;
+  ctx.fillText("Summa: 100,0 %", left, 612);
+  ctx.textAlign = "right";
+  ctx.fillText("Gissning inför riksdagsvalet 2026", right, 612);
+  ctx.textAlign = "left";
 }
 
 downloadBtn.addEventListener("click", async () => {
