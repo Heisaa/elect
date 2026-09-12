@@ -201,20 +201,81 @@ function buildHemicycle() {
   hemicycleDots.sort((a, b) => b.theta - a.theta);
 }
 
-function updateHemicycle() {
+function updateHemicycle(counts) {
   if (!hemicycleDots.length) return;
 
   // Tilldela partiernas mandat som sammanhängande block, från vänster
   let idx = 0;
-  for (const s of seatCounts()) {
+  for (const s of counts) {
+    const ring = coalition.has(s.key);
     for (let i = 0; i < s.seats; i++, idx++) {
-      hemicycleDots[idx].el.setAttribute("fill", s.color);
+      const el = hemicycleDots[idx].el;
+      el.setAttribute("fill", s.color);
+      el.setAttribute("stroke", ring ? "#141210" : "none");
+      el.setAttribute("stroke-width", ring ? "1.6" : "0");
     }
   }
   // Resterande prickar (inget parti över spärren) hålls grå
   for (; idx < hemicycleDots.length; idx++) {
-    hemicycleDots[idx].el.setAttribute("fill", "#d8d2c8");
+    const el = hemicycleDots[idx].el;
+    el.setAttribute("fill", "#d8d2c8");
+    el.setAttribute("stroke", "none");
   }
+}
+
+/* ---------- Regeringsalternativ ---------- */
+
+const coalition = new Set();
+const coalitionBox = document.getElementById("coalition");
+const coalitionResult = document.getElementById("coalition-result");
+const coalitionChips = {};
+
+for (const p of PARTIES) {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "coalition-chip";
+  btn.dataset.key = p.abbr;
+  btn.title = p.name;
+  btn.innerHTML = `<span class="chip-dot" style="background:${COLORS[p.abbr]}"></span>${p.abbr} <span class="chip-seats">0</span>`;
+  btn.addEventListener("click", () => {
+    if (coalition.has(p.abbr)) coalition.delete(p.abbr);
+    else coalition.add(p.abbr);
+    const counts = seatCounts();
+    updateHemicycle(counts);
+    updateCoalition(counts);
+  });
+  coalitionBox.appendChild(btn);
+  coalitionChips[p.abbr] = { btn, seats: btn.querySelector(".chip-seats") };
+}
+
+function updateCoalition(counts) {
+  let total = 0;
+  for (const p of PARTIES) {
+    const c = coalitionChips[p.abbr];
+    const n = counts.find((s) => s.key === p.abbr)?.seats ?? 0;
+    c.seats.textContent = n;
+    if (n === 0) {
+      coalition.delete(p.abbr);
+      c.btn.disabled = true;
+    } else {
+      c.btn.disabled = false;
+    }
+    c.btn.classList.toggle("on", coalition.has(p.abbr));
+    if (coalition.has(p.abbr)) total += n;
+  }
+
+  const names = PARTIES.filter((p) => coalition.has(p.abbr)).map((p) => p.abbr);
+  if (!names.length) {
+    coalitionResult.textContent = "Klicka på partierna ovan för att bygga ett regeringsunderlag.";
+    coalitionResult.classList.remove("ok");
+    return;
+  }
+
+  const hasMajority = total >= MAJORITY_SEATS;
+  coalitionResult.textContent =
+    `Regeringsunderlag ${names.join("+")}: ${total} av ${TOTAL_SEATS} mandat — ` +
+    (hasMajority ? "majoritet \u2713" : `minoritet, saknar ${MAJORITY_SEATS - total} mandat`);
+  coalitionResult.classList.toggle("ok", hasMajority);
 }
 
 function allRows() {
@@ -350,7 +411,9 @@ function refreshUI() {
   downloadBtn.disabled = !ok;
   copyBtn.disabled = !ok;
 
-  updateHemicycle();
+  const counts = seatCounts();
+  updateHemicycle(counts);
+  updateCoalition(counts);
 }
 
 document.getElementById("prefill-2022").addEventListener("click", () => {
