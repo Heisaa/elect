@@ -12,7 +12,7 @@ En enkel hemsida där du gissar varje partis andel av rösterna i riksdagsvalet 
 
 ## Köra lokalt
 
-Det är en helt statisk sida (inga byggverktyg). Öppna bara `index.html` i webbläsaren, eller:
+Det är en helt statisk sida. Öppna bara `index.html` i webbläsaren, eller:
 
 ```bash
 npx serve .
@@ -31,3 +31,4 @@ sidan automatiskt vid varje push till `main`. Aktivera den så här:
 
 Alternativ: välj *Deploy from a branch* (branch `main`, mapp `/ (root)`) så behövs
 ingen workflow alls, men då sker publiceringen inte via Actions-loggen.
+
