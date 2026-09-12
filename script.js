@@ -444,7 +444,8 @@ downloadBtn.addEventListener("click", async () => {
 
 /* ---------- Riktiga logotyper (om de finns i logos/) ---------- */
 
-for (const p of [...PARTIES.map((p) => p.abbr), "OV"]) {
+/* "Övriga" har ingen logotypfil – det grå Ö-chippet räcker. */
+for (const p of PARTIES.map((p) => p.abbr)) {
   tryLogo(p, () => {
     const badge = els[p].col.querySelector(".badge");
     badge.innerHTML = `<img src="${logoImgs[p].src}" alt="${p}">`;
